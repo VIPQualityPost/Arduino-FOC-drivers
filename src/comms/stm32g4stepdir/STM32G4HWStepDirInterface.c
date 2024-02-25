@@ -59,6 +59,18 @@ int STM32HWStepDirInterface::init()
         return 0;
     }
 
+    // Setup the output trigger in case we are going to use a cascaded timer.
+    TIM_MasterConfigTypeDef parent_config;
+
+    parent_config.MasterOutputTrigger = TIM_TRGO_ENCODER_CLK;
+    parent_config.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+    parent_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+
+    if(HAL_TIM_MasterConfigSynchronization(&stepdir_handle, &parent_config) != HAL_OK){
+        initalized = false;
+        return 0;
+    }
+
     // Set edge polarity to rising (CC2P = 0).
     stepdir_handle.Instance->CCER &= ~TIM_CCER_CC2P;
 
@@ -133,17 +145,6 @@ int STM32HWStepDirInterface::linkedTimerInit()
     // }
 
     // Configure the link between timers. 
-    TIM_MasterConfigTypeDef parent_config;
-
-    parent_config.MasterOutputTrigger = TIM_TRGO_ENCODER_CLK;
-    parent_config.MasterOutputTrigger2 = TIM_TRGO2_RESET;
-    parent_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-
-    if(HAL_TIM_MasterConfigSynchronization(&stepdir_handle, &parent_config) != HAL_OK){
-        initalized = false;
-        return 0;
-    }
-
     TIM_SlaveConfigTypeDef child_config;
 
     child_config.SlaveMode = TIM_SLAVEMODE_RESET;
