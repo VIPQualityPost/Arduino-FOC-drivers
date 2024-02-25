@@ -22,9 +22,7 @@ class STM32CascadeTimer {
         float getVelocityValue();
 
         // The timer that is doing velocity calculations.
-        TIM_TypeDef parent_timer;
-        TIM_HandleTypeDef cascade_handle;
-
+        TIM_HandleTypeDef parent_timer, cascade_timer;
 
     protected:
         /**

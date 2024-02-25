@@ -1,15 +1,15 @@
-#include "./STM32HWStepDirInterface.h"
+#include "./STM32G4HWStepDirInterface.h"
 
 #if defined(STM32G431xx) || defined(STM32G474xx) || defined(STM32G494xx)
 
-STM32HWStepDirInterface::STM32HWStepDirInterface(int pin_dir, int pin_step, float step_angle)
+STM32G4HWStepDirInterface::STM32HWStepDirInterface(int pin_dir, int pin_step, float step_angle)
 {
     _pin_dir = digitalPinToPinName(pin_dir);
     _pin_step = digitalPinToPinName(pin_step);
     _step_angle = step_angle;
 }
 
-int STM32HWStepDirInterface::init()
+int STM32G4HWStepDirInterface::init()
 {
     initialized = false;
 
@@ -88,82 +88,7 @@ int STM32HWStepDirInterface::init()
     initialized = true;
 }
 
-int STM32HWStepDirInterface::linkedTimerInit()
-{
-    /**
-     * Need to write something to find free timers. It needs to be an advanced or general purpose timer.
-     */ 
-
-    // Set up the timer.
-    velocity_handle = (TIM_TypeDef)TIM4;
-
-    velocity_handle.Init.Period = 0xFFFF;
-    velocity_handle.Init.Prescaler = 0;
-    velocity_handle.Init.ClockDivision = 0;
-    velocity_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
-    velocity_handle.Init.RepetitionCounter = 0;
-    velocity_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLED;
-
-    if(HAL_TIM_Base_Init(&velocity_handle) != HAL_OK){
-        return 0;
-    }
-
-    TIM_ClockConfigTypeDef child_clock;
-
-    child_clock.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-
-    if(HAL_TIM_ConfigClockSource(&velocity_handle, &child_clock) != HAL_OK){
-        return 0;
-    }
-
-    
-    // Configure input capture mode.
-    TIM_IC_InitTypeDef velocity_config;
-
-    if(HAL_TIM_IC_Init(&velocity_handle) != HAL_OK){
-        return 0;
-    }
-
-    velocity_config.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
-    velocity_config.ICSelection = TIM_ICSELECTION_INDIRECTTI;
-    velocity_config.ICPrescaler = TIM_ICPSC_DIV1;
-    velocity_config.Filter = 0;
-
-    if(HAL_TIM_IC_ConfigChannel(&velocity_handle, &velocity_config, TIM_CHANNEL_1) != HAL_OK){
-        initialized = false;
-        return 0;
-    }
-
-    // Do we actually need to use both channels? 
-    // We don't want to measure pulse length but instead just between common edge of single pulses.
-    // velocity_config.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
-    // velocity_config.ICSelection = TIM_ICSELECTION_DIRECTTI;
-
-    // if(HAL_TIM_IC_ConfigChannel(&velocity_handle, &velocity_config, TIM_CHANNEL_2) != HAL_OK){
-    //     initialized = false;
-    //     return 0;
-    // }
-
-    // Configure the link between timers. 
-    TIM_SlaveConfigTypeDef child_config;
-
-    child_config.SlaveMode = TIM_SLAVEMODE_RESET;
-    child_config.InputTrigger = TIM_TS_ITR0; // OC5REF encoder clk -> TRGO TIM1 on parent
-    child_config.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
-    child_config.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
-    child_config.TriggerFilter = 0; // up to 0xF
-
-    if(HAL_TIM_SlaveConfigSynchro(&velocity_handle, &child_config) != HAL_OK){
-        initialized = false;
-        return 0;
-    }
-
-    if(HAL_TIM_IC_Start_DMA(&velocity_handle, TIM_CHANNEL_1, &velocityCounter, 1) != HAL_OK){
-        return 0;
-    }
-}
-
-int STM32HWStepDirInterface::setHighResolution(bool res)
+int STM32G4HWStepDirInterface::setHighResolution(bool res)
 {
     /**
      * This sets whether the input capture for the step edge is done on just one edge or on both edges of the step.
@@ -180,7 +105,7 @@ int STM32HWStepDirInterface::setHighResolution(bool res)
     }
 }
 
-int STM32HWStepDirInterface::setFallingEdge(bool edge)
+int STM32G4HWStepDirInterface::setFallingEdge(bool edge)
 {
     /**
      * When configured in input capture mode this bit controls the polarity of the capture.
@@ -198,31 +123,19 @@ int STM32HWStepDirInterface::setFallingEdge(bool edge)
     return 1;
 }
 
-int STM32HWStepDirInterface::getDirection(void){
+int STM32G4HWStepDirInterface::getDirection(void){
     // 0 is upcounter, 1 is downcounter
     return ((encoder_handle.Instance->CR1 & TIM_CR1_DIR) == TIM_CR1_DIR)
 }
 
-long STM32HWStepDirInterface::getCount(void)
+long STM32G4HWStepDirInterface::getCount(void)
 {
     return (long)encoder_angle.Instance->CNT;
 }
 
-float STM32HWStepDirInterface::getValue(void)
+float STM32G4HWStepDirInterface::getValue(void)
 {
     return (float)(getCount() * _step_angle);
-}
-
-float STM32HWStepDirInterface::getVelocityValue(void)
-{
-    // TODO
-    return 0.0f;
-}
-
-float STM32HWStepDirInterface::getAcceleration()
-{
-    // TODO
-    return 0.0f;
 }
 
 #endif

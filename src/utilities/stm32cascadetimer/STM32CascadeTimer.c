@@ -2,7 +2,7 @@
 
 #if defined(_STM32_DEF_)
 
-STM32CascadeTimer::STM32CascadeTimer(TIM_TypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel)
+STM32CascadeTimer::STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel)
 {
     TIM_HandleTypeDef cascadeHandle;
     cascadeHandle.Instance = cascadeTimer;
@@ -48,6 +48,8 @@ STM32CascadeTimer::initDMA()
     }
 
     __HAL_LINKDMA(&cascade_handle,hdma[TIM_DMA_ID_TRIGGER],&dma_handle);
+
+    HAL_DMA_Start(dma_handle, &(cascade_handle.Instance->CNT), &velocityCounter, 2);
 }
 
 STM32CascadeTimer::initTimer()
@@ -107,7 +109,7 @@ STM32CascadeTimer::initTimer()
     child_config.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
     child_config.TriggerFilter = 0; // up to 0xF
 
-    switch (parent_timer)
+    switch (parent_timer.Instance)
     {
     case TIM1:
         child_config.InputTrigger = TIM_TS_ITR0; // OC5REF encoder clk -> TRGO TIM1 on parent
@@ -139,7 +141,6 @@ STM32CascadeTimer::initTimer()
 
     if (HAL_TIM_SlaveConfigSynchro(&cascade_handle, &child_config) != HAL_OK)
     {
-        initialized = false;
         return 0;
     }
 

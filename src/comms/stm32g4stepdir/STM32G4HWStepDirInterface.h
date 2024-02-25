@@ -5,7 +5,7 @@
 #if defined(STM32G431xx) || defined(STM32G474xx) || defined(STM32G494xx)
 
 #include "common/foc_utils.h"
-#include "communication/StepDirListener.h"
+#include "utilities/stm32cascadetimer/STM32CascadeTimer.h"
 
 class STM32G4HWStepDirInterface {
     public:
@@ -36,8 +36,7 @@ class STM32G4HWStepDirInterface {
         long getCount();
 
         float _step_angle;
-
-    protected:
+        
         TIM_HandleTypeDef stepdir_handle;
         PinName _pin_step, _pin_dir;
 };
