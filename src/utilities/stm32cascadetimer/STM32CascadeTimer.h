@@ -6,7 +6,7 @@
 
 class STM32CascadeTimer {
     public:
-        STM32CascadeTimer(TIM_TypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel);
+        STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel);
 
         int init();
         int initTimer();
