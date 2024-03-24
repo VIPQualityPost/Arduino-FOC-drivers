@@ -1,8 +1,8 @@
-#include "./STM32G4HWStepDirInterface.h"
+#include "STM32G4HWStepDirInterface.h"
 
 #if defined(STM32G431xx) || defined(STM32G474xx) || defined(STM32G494xx)
 
-STM32G4HWStepDirInterface::STM32HWStepDirInterface(int pin_dir, int pin_step, float step_angle)
+STM32G4HWStepDirInterface::STM32G4HWStepDirInterface(uint32_t pin_dir, uint32_t pin_step, float step_angle) 
 {
     _pin_dir = digitalPinToPinName(pin_dir);
     _pin_step = digitalPinToPinName(pin_step);
@@ -19,7 +19,7 @@ int STM32G4HWStepDirInterface::init()
     TIM_TypeDef *InstanceA = (TIM_TypeDef *)pinmap_peripheral(_pin_dir, PinMap_TIM);
     TIM_TypeDef *InstanceB = (TIM_TypeDef *)pinmap_peripheral(_pin_step, PinMap_TIM);
 
-    if (!IS_TIM_ENCODER_INTERFACE_INSTANCE(InstanceA) || !IS_TIM_ENCODER_INTERFACE(InstanceB))
+    if (!IS_TIM_ENCODER_INTERFACE_INSTANCE(InstanceA) || !IS_TIM_ENCODER_INTERFACE_INSTANCE(InstanceB))
     {
         return 0;
     }
@@ -35,7 +35,7 @@ int STM32G4HWStepDirInterface::init()
     stepdir_handle.Init.ClockDivision = 0;
     stepdir_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
     stepdir_handle.Init.RepetitionCounter = 0;
-    stepdir_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLED;
+    stepdir_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 
     enableTimerClock(&stepdir_handle);
 
@@ -66,8 +66,8 @@ int STM32G4HWStepDirInterface::init()
     parent_config.MasterOutputTrigger2 = TIM_TRGO2_RESET;
     parent_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
 
-    if(HAL_TIM_MasterConfigSynchronization(&stepdir_handle, &parent_config) != HAL_OK){
-        initalized = false;
+    if(HAL_TIMEx_MasterConfigSynchronization(&stepdir_handle, &parent_config) != HAL_OK){
+        initialized = false;
         return 0;
     }
 
@@ -78,7 +78,7 @@ int STM32G4HWStepDirInterface::init()
     stepdir_handle.Instance->CR2 &= ~TIM_CR2_MMS;
     stepdir_handle.Instance->CR2 |= TIM_TRGO_ENCODER_CLK;
 
-    linkedTimerInit();
+    linkedTimer.init();
 
     if (HAL_TIM_Encoder_Start(&stepdir_handle, TIM_CHANNEL_ALL) != HAL_OK)
     {
@@ -94,18 +94,18 @@ int STM32G4HWStepDirInterface::setHighResolution(bool res)
      * This sets whether the input capture for the step edge is done on just one edge or on both edges of the step.
      * Standard step-dir output seems to be X1 resolution so this is default although both are availble.
      */
-    stepdir_handle.Instance->SCMR &= ~TIM_SCMR_SMS;
+    stepdir_handle.Instance->SMCR &= ~TIM_SMCR_SMS;
     if (res)
     {
-        stepdir_handle.Instance->SCMR |= TIM_ENCODERMODE_CLOCKPLUSDIRECTION_X2;
+        stepdir_handle.Instance->SMCR |= TIM_ENCODERMODE_CLOCKPLUSDIRECTION_X2;
     }
     else
     {
-        stepdir_handle.Instance->SCMR |= TIM_ENCODERMODE_CLOCKPLUSDIRECTION_X1;
+        stepdir_handle.Instance->SMCR |= TIM_ENCODERMODE_CLOCKPLUSDIRECTION_X1;
     }
 }
 
-int STM32G4HWStepDirInterface::setFallingEdge(bool edge)
+int STM32G4HWStepDirInterface::setFallingEdge(int edge)
 {
     /**
      * When configured in input capture mode this bit controls the polarity of the capture.
@@ -125,12 +125,12 @@ int STM32G4HWStepDirInterface::setFallingEdge(bool edge)
 
 int STM32G4HWStepDirInterface::getDirection(void){
     // 0 is upcounter, 1 is downcounter
-    return ((encoder_handle.Instance->CR1 & TIM_CR1_DIR) == TIM_CR1_DIR)
+    return ((stepdir_handle.Instance->CR1 & TIM_CR1_DIR) == TIM_CR1_DIR);
 }
 
 long STM32G4HWStepDirInterface::getCount(void)
 {
-    return (long)encoder_angle.Instance->CNT;
+    return (long)stepdir_handle.Instance->CNT;
 }
 
 float STM32G4HWStepDirInterface::getValue(void)

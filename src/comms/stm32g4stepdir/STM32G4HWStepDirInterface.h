@@ -1,18 +1,23 @@
-#pramga once
+#pragma once
 
 #include "Arduino.h"
 
 #if defined(STM32G431xx) || defined(STM32G474xx) || defined(STM32G494xx)
+#include "stm32g4xx_hal.h"
+#include "stm32g4xx_hal_tim.h"
+#include "stm32g4xx_hal_tim_ex.h"
+#include "stm32g4xx_ll_tim.h"
+
 
 #include "common/foc_utils.h"
 #include "utilities/stm32cascadetimer/STM32CascadeTimer.h"
 
 class STM32G4HWStepDirInterface {
     public:
-        STM32G4SpeedDirInput(int pin_dir, int pin_step, float step_angle);
+        STM32G4HWStepDirInterface(uint32_t pin_dir, uint32_t pin_step, float step_angle);
 
         int init();
-        bool initalized;
+        bool initialized;
 
         /**
          * There are two options: counting on each edge, or counting on one polarity.
@@ -39,6 +44,9 @@ class STM32G4HWStepDirInterface {
         
         TIM_HandleTypeDef stepdir_handle;
         PinName _pin_step, _pin_dir;
+    private:
+        STM32CascadeTimer linkedTimer;
+
 };
 
 #endif
