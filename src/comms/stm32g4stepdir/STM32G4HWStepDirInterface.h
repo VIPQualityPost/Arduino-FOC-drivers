@@ -51,6 +51,7 @@ class STM32G4HWStepDirInterface {
         PinName _pin_step, _pin_dir;
 
         STM32CascadeTimer linkedTimer;
+        int cascade_result;
 
 };
 

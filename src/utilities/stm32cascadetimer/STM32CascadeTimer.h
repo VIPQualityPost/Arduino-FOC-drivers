@@ -22,7 +22,7 @@ class STM32CascadeTimer {
          * but this still needs to be turned into real units (rad/s). Requires checking
          * what the timer clocking is. 
         */
-        uint32_t velocityCounts;
+        uint32_t velocityCounts[3];
         float getVelocityValue();
 
         // The timer that is doing velocity calculations.

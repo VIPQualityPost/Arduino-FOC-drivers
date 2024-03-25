@@ -81,7 +81,7 @@ int32_t STM32G4HWStepDirInterface::init()
     // stepdir_handle.Instance->CR2 |= TIM_TRGO_ENCODER_CLK;
 
     linkedTimer.link(stepdir_handle,TIM4,DMA1_Channel1);
-    linkedTimer.init();
+    cascade_result = linkedTimer.init();
 
     if (HAL_TIM_Encoder_Start(&stepdir_handle, TIM_CHANNEL_ALL) != HAL_OK)
     {
@@ -145,8 +145,8 @@ float STM32G4HWStepDirInterface::getValue(void)
 
 float STM32G4HWStepDirInterface::getVelocity(void)
 {
-    // return linkedTimer.getVelocityValue();
-    return linkedTimer.cascade_timer->CNT;
+    return linkedTimer.getVelocityValue();
+    // return linkedTimer.cascade_timer->CCR1;
 }
 
 #endif
