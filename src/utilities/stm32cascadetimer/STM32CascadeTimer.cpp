@@ -5,17 +5,17 @@
 STM32CascadeTimer::STM32CascadeTimer(){};
 STM32CascadeTimer::~STM32CascadeTimer(){};
 
-STM32CascadeTimer::STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel)
+STM32CascadeTimer::STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef *cascadeTimer, DMA_Channel_TypeDef *dmaChannel)
 {
     link(parentTimer, cascadeTimer, dmaChannel);
 }
 
-int STM32CascadeTimer::link(TIM_HandleTypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel)
+int STM32CascadeTimer::link(TIM_HandleTypeDef parentTimer, TIM_TypeDef *cascadeTimer, DMA_Channel_TypeDef *dmaChannel)
 {
 
-    cascade_handle.Instance = &cascadeTimer;
+    cascade_handle.Instance = cascadeTimer;
 
-    dma_handle.Instance = &dmaChannel;
+    dma_handle.Instance = dmaChannel;
 
     parent_timer = parentTimer;
     cascade_timer = cascadeTimer;
@@ -113,37 +113,37 @@ int STM32CascadeTimer::initTimer()
     // Configure the link between timers.
     TIM_SlaveConfigTypeDef child_config;
 
-    child_config.SlaveMode = TIM_SLAVEMODE_RESET; // Restart the counter on trigger.
+    child_config.SlaveMode = TIM_SLAVEMODE_RESET;
     child_config.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
     child_config.TriggerPrescaler = TIM_TRIGGERPRESCALER_DIV1;
     child_config.TriggerFilter = 0; // up to 0xF
 
 
         // int _getInternalSourceTrigger(HardwareTimer* master, HardwareTimer* slave) { // put master and slave in temp variables to avoid arrows
-    TIM_TypeDef *TIM_master = parent_timer.Instance;
+    TIM_TypeDef *parentTimer = parent_timer.Instance;
     #if defined(TIM1) && defined(LL_TIM_TS_ITR0)
-        if (TIM_master == TIM1) 
-            child_config.InputTrigger = LL_TIM_TS_ITR0;// return TIM_TS_ITR0;
+        if (parentTimer == TIM1) 
+            child_config.InputTrigger = LL_TIM_TS_ITR0;
     #endif
     #if defined(TIM2) &&  defined(LL_TIM_TS_ITR1)
-        else if (TIM_master == TIM2) 
-            child_config.InputTrigger = LL_TIM_TS_ITR1;//return TIM_TS_ITR1;
+        else if (parentTimer == TIM2) 
+            child_config.InputTrigger = LL_TIM_TS_ITR1;
     #endif
     #if defined(TIM3) &&  defined(LL_TIM_TS_ITR2)
-        else if (TIM_master == TIM3) 
-            child_config.InputTrigger = LL_TIM_TS_ITR2;//return TIM_TS_ITR2;
+        else if (parentTimer == TIM3) 
+            child_config.InputTrigger = LL_TIM_TS_ITR2;
     #endif  
     #if defined(TIM4) &&  defined(LL_TIM_TS_ITR3)
-        else if (TIM_master == TIM4) 
-            child_config.InputTrigger = LL_TIM_TS_ITR3;//return TIM_TS_ITR3;
+        else if (parentTimer == TIM4) 
+            child_config.InputTrigger = LL_TIM_TS_ITR3;
     #endif 
     #if defined(TIM5) &&  defined(LL_TIM_TS_ITR4)
-        else if (TIM_master == TIM5) 
-            child_config.InputTrigger = LL_TIM_TS_ITR4;//return TIM_TS_ITR4;
+        else if (parentTimer == TIM5) 
+            child_config.InputTrigger = LL_TIM_TS_ITR4;
     #endif
     #if defined(TIM8) &&  defined(LL_TIM_TS_ITR5)
-        else if (TIM_master == TIM8) 
-            child_config.InputTrigger = LL_TIM_TS_ITR5;//return TIM_TS_ITR5;
+        else if (parentTimer == TIM8) 
+            child_config.InputTrigger = LL_TIM_TS_ITR5;
     #endif
 
 
@@ -152,7 +152,7 @@ int STM32CascadeTimer::initTimer()
         return -1;
     }
 
-    if (HAL_TIM_IC_Start_DMA(&cascade_handle, TIM_CHANNEL_1, (uint32_t*)&velocityCounts, 1) != HAL_OK)
+    if (HAL_TIM_IC_Start_DMA(&cascade_handle, TIM_CHANNEL_1, &velocityCounts, 1) != HAL_OK)
     {
         return -1;
     }
@@ -161,7 +161,7 @@ int STM32CascadeTimer::initTimer()
 
 float STM32CascadeTimer::getVelocityValue()
 {
-    return 42.0f;
+    return velocityCounts;
 }
 
 TIM_TypeDef STM32CascadeTimer::findFreeTimer()

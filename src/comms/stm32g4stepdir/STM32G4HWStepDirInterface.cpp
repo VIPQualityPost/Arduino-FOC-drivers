@@ -9,7 +9,7 @@ STM32G4HWStepDirInterface::STM32G4HWStepDirInterface(uint32_t pin_dir, uint32_t 
     _step_angle = step_angle;
 }
 
-int STM32G4HWStepDirInterface::init()
+int32_t STM32G4HWStepDirInterface::init()
 {
     initialized = false;
 
@@ -56,7 +56,7 @@ int STM32G4HWStepDirInterface::init()
 
     if (HAL_TIM_Encoder_Init(&stepdir_handle, &stepdir_config) != HAL_OK)
     {
-        return 0;
+        return -1;
     }
 
     // Setup the output trigger in case we are going to use a cascaded timer.
@@ -72,23 +72,27 @@ int STM32G4HWStepDirInterface::init()
     }
 
     // Set edge polarity to rising (CC2P = 0).
-    stepdir_handle.Instance->CCER &= ~TIM_CCER_CC2P;
+    // I think this is set by the stepdir config
+    // stepdir_handle.Instance->CCER &= ~TIM_CCER_CC2P;
 
     // Setup trgo (oc5ref) for edge period timing for velocity measurements.
-    stepdir_handle.Instance->CR2 &= ~TIM_CR2_MMS;
-    stepdir_handle.Instance->CR2 |= TIM_TRGO_ENCODER_CLK;
+    // I think this is set by the M/S config
+    // stepdir_handle.Instance->CR2 &= ~TIM_CR2_MMS;
+    // stepdir_handle.Instance->CR2 |= TIM_TRGO_ENCODER_CLK;
 
+    linkedTimer.link(stepdir_handle,TIM4,DMA1_Channel1);
     linkedTimer.init();
 
     if (HAL_TIM_Encoder_Start(&stepdir_handle, TIM_CHANNEL_ALL) != HAL_OK)
     {
-        return 0;
+        return -1;
     }
 
     initialized = true;
+    return 0;
 }
 
-int STM32G4HWStepDirInterface::setHighResolution(bool res)
+int32_t STM32G4HWStepDirInterface::setHighResolution(bool res)
 {
     /**
      * This sets whether the input capture for the step edge is done on just one edge or on both edges of the step.
@@ -103,9 +107,10 @@ int STM32G4HWStepDirInterface::setHighResolution(bool res)
     {
         stepdir_handle.Instance->SMCR |= TIM_ENCODERMODE_CLOCKPLUSDIRECTION_X1;
     }
+    return 0;
 }
 
-int STM32G4HWStepDirInterface::setFallingEdge(int edge)
+int32_t STM32G4HWStepDirInterface::setFallingEdge(int edge)
 {
     /**
      * When configured in input capture mode this bit controls the polarity of the capture.
@@ -120,15 +125,15 @@ int STM32G4HWStepDirInterface::setFallingEdge(int edge)
         stepdir_handle.Instance->CCER &= ~TIM_CCER_CC2P;
     }
 
-    return 1;
+    return 0;
 }
 
-int STM32G4HWStepDirInterface::getDirection(void){
+int32_t STM32G4HWStepDirInterface::getDirection(void){
     // 0 is upcounter, 1 is downcounter
     return ((stepdir_handle.Instance->CR1 & TIM_CR1_DIR) == TIM_CR1_DIR);
 }
 
-long STM32G4HWStepDirInterface::getCount(void)
+uint32_t STM32G4HWStepDirInterface::getCount(void)
 {
     return (long)stepdir_handle.Instance->CNT;
 }
@@ -136,6 +141,12 @@ long STM32G4HWStepDirInterface::getCount(void)
 float STM32G4HWStepDirInterface::getValue(void)
 {
     return (float)(getCount() * _step_angle);
+}
+
+float STM32G4HWStepDirInterface::getVelocity(void)
+{
+    // return linkedTimer.getVelocityValue();
+    return linkedTimer.cascade_timer->CNT;
 }
 
 #endif
