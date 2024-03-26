@@ -149,4 +149,9 @@ float STM32G4HWStepDirInterface::getVelocity(void)
     // return linkedTimer.cascade_timer->CCR1;
 }
 
+float STM32G4HWStepDirInterface::getAccel(void)
+{
+    return linkedTimer.getAccelValue();
+}
+
 #endif

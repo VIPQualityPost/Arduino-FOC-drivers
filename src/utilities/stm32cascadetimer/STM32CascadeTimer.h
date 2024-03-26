@@ -4,6 +4,7 @@
 
 #if defined(_STM32_DEF_)
 
+
 class STM32CascadeTimer {
     public:
         STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef *cascadeTimer, DMA_Channel_TypeDef *dmaChannel);
@@ -24,6 +25,7 @@ class STM32CascadeTimer {
         */
         uint32_t velocityCounts[3];
         float getVelocityValue();
+        float getAccelValue();
 
         // The timer that is doing velocity calculations.
         TIM_HandleTypeDef parent_timer;
@@ -41,9 +43,7 @@ class STM32CascadeTimer {
          * the firmware can just pick a channel. 
         */
         DMA_Channel_TypeDef findFreeDMAChannel();
-
-        DMA_HandleTypeDef dma_handle;
-        TIM_HandleTypeDef cascade_handle;
+        // HardwareTimer cascade_hw_timer;
 };
 
 #endif

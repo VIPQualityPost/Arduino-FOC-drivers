@@ -2,6 +2,10 @@
 
 #if defined(_STM32_DEF_)
 
+DMA_HandleTypeDef Cascade_dma_handle;
+TIM_HandleTypeDef cascade_handle;
+
+
 STM32CascadeTimer::STM32CascadeTimer(){};
 STM32CascadeTimer::~STM32CascadeTimer(){};
 
@@ -12,11 +16,6 @@ STM32CascadeTimer::STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef 
 
 int STM32CascadeTimer::link(TIM_HandleTypeDef parentTimer, TIM_TypeDef *cascadeTimer, DMA_Channel_TypeDef *dmaChannel)
 {
-
-    cascade_handle.Instance = cascadeTimer;
-
-    dma_handle.Instance = dmaChannel;
-
     parent_timer = parentTimer;
     cascade_timer = cascadeTimer;
     return 0;
@@ -41,26 +40,41 @@ int STM32CascadeTimer::initDMA()
     HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
+
+
+
     // TODO use chosen DMA Request, not TIM4
-    dma_handle.Init.Request = DMA_REQUEST_TIM4_UP;
-    dma_handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
-    dma_handle.Init.PeriphInc = DMA_PINC_DISABLE;
-    dma_handle.Init.MemInc = DMA_MINC_ENABLE;
-    dma_handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    dma_handle.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    dma_handle.Init.Mode = DMA_CIRCULAR;
-    dma_handle.Init.Priority = DMA_PRIORITY_LOW;
-    if (HAL_DMA_Init(&dma_handle) != HAL_OK)
+    Cascade_dma_handle.Instance = DMA1_Channel1;
+    Cascade_dma_handle.Init.Request = DMA_REQUEST_TIM4_CH1;
+    Cascade_dma_handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    Cascade_dma_handle.Init.PeriphInc = DMA_PINC_DISABLE;
+    Cascade_dma_handle.Init.MemInc = DMA_MINC_ENABLE;
+    Cascade_dma_handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    Cascade_dma_handle.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    Cascade_dma_handle.Init.Mode = DMA_CIRCULAR;
+    Cascade_dma_handle.Init.Priority = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&Cascade_dma_handle) != HAL_OK)
     {
         return -10;
     }
+    
+    // where does hdma come from and is it the right thing to use here?
+    __HAL_LINKDMA(&cascade_handle, hdma[TIM_DMA_ID_CC1], Cascade_dma_handle);
 
-    __HAL_LINKDMA(&cascade_handle, hdma[TIM_DMA_ID_CC1], dma_handle);
-
-    // if (HAL_DMA_Start(&dma_handle, (uint32_t) & (cascade_handle.Instance->CCR1), (uint32_t)&velocityCounts, 3) != HAL_OK) {
-    //     return -10;
+    
+    // if (HAL_DMA_Start(&Cascade_dma_handle, (uint32_t) & (cascade_handle.Instance->CCR1), (uint32_t)&velocityCounts, 3) != HAL_OK) {
+    //         return -10;
     // }
     return 0;
+}
+
+extern "C" {
+    void DMA1_Channel1_IRQHandler()
+    {
+        HAL_DMA_IRQHandler(&Cascade_dma_handle);
+        digitalToggle(LED_BUILTIN);
+    }
+
 }
 
 int STM32CascadeTimer::initTimer()
@@ -70,8 +84,8 @@ int STM32CascadeTimer::initTimer()
      */
 
     // Set up the timer.
+    // cascade_hw_timer.setup(TIM4);
     cascade_handle.Instance = TIM4;
-
     cascade_handle.Init.Period = 0xFFFF; // For now treat all timers as 16 bit even if they are 32bit.
     cascade_handle.Init.Prescaler = 0;
     cascade_handle.Init.ClockDivision = 0;
@@ -153,17 +167,29 @@ int STM32CascadeTimer::initTimer()
     }
 
     int ret = HAL_TIM_IC_Start_DMA(&cascade_handle, TIM_CHANNEL_1, velocityCounts, 2);
+    // int ret = HAL_TIM_Base_Start_DMA(&cascade_handle, TIM_CHANNEL_1, velocityCounts, 2);
     if ( ret != HAL_OK)
     {
         Serial.printf("error in cascade timer start: %d\n", ret);
         return -6;
     }
+    __HAL_DMA_DISABLE_IT(&Cascade_dma_handle,DMA_IT_TC);
+    __HAL_DMA_DISABLE_IT(&Cascade_dma_handle,DMA_IT_HT);
+
+    HAL_NVIC_SetPriority(TIM4_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM4_IRQn);
+
     return 0;
 }
 
 float STM32CascadeTimer::getVelocityValue()
 {
     return velocityCounts[0];
+}
+
+float STM32CascadeTimer::getAccelValue()
+{
+    return (float)velocityCounts[0]-(float)velocityCounts[1];
 }
 
 TIM_TypeDef STM32CascadeTimer::findFreeTimer()

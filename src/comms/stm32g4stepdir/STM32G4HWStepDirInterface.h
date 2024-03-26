@@ -40,6 +40,10 @@ class STM32G4HWStepDirInterface {
         float getVelocity();
 
         /**
+         * get the velocity from the cascade timer
+        */
+        float getAccel();
+        /**
          * Read the counter and return desired angle.
          */
         float getValue();
