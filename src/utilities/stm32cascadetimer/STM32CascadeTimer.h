@@ -4,13 +4,14 @@
 
 #if defined(_STM32_DEF_)
 
+
 class STM32CascadeTimer {
     public:
-        STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel);
+        STM32CascadeTimer(TIM_HandleTypeDef parentTimer, TIM_TypeDef *cascadeTimer, DMA_Channel_TypeDef *dmaChannel);
         STM32CascadeTimer();
         ~STM32CascadeTimer();
 
-        int link(TIM_HandleTypeDef parentTimer, TIM_TypeDef cascadeTimer, DMA_Channel_TypeDef dmaChannel);
+        int link(TIM_HandleTypeDef parentTimer, TIM_TypeDef *cascadeTimer, DMA_Channel_TypeDef *dmaChannel);
 
         int init();
         int initTimer();
@@ -22,12 +23,13 @@ class STM32CascadeTimer {
          * but this still needs to be turned into real units (rad/s). Requires checking
          * what the timer clocking is. 
         */
-        uint16_t velocityCounts;
+        uint32_t velocityCounts[3];
         float getVelocityValue();
+        float getAccelValue();
 
         // The timer that is doing velocity calculations.
         TIM_HandleTypeDef parent_timer;
-        TIM_TypeDef cascade_timer;
+        TIM_TypeDef *cascade_timer;
 
     protected:
         /**
@@ -41,9 +43,7 @@ class STM32CascadeTimer {
          * the firmware can just pick a channel. 
         */
         DMA_Channel_TypeDef findFreeDMAChannel();
-
-        DMA_HandleTypeDef dma_handle;
-        TIM_HandleTypeDef cascade_handle;
+        // HardwareTimer cascade_hw_timer;
 };
 
 #endif

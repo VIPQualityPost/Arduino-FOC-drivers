@@ -16,36 +16,46 @@ class STM32G4HWStepDirInterface {
     public:
         STM32G4HWStepDirInterface(uint32_t pin_dir, uint32_t pin_step, float step_angle);
 
-        int init();
+        int32_t init();
         bool initialized;
 
         /**
          * There are two options: counting on each edge, or counting on one polarity.
          */
-        int setHighResolution(bool res);
+        int32_t setHighResolution(bool res);
 
         /**
          * If using 1x resolution (normal step-dir) then set positive or negative edge counting.
          */
-        int setFallingEdge(int edge);
+        int32_t setFallingEdge(int edge);
 
         /**
          * Output the direction bit from the timer.
          */
-        int getDirection();
+        int32_t getDirection();
 
+        /**
+         * get the velocity from the cascade timer
+        */
+        float getVelocity();
+
+        /**
+         * get the velocity from the cascade timer
+        */
+        float getAccel();
         /**
          * Read the counter and return desired angle.
          */
         float getValue();
-        long getCount();
+        uint32_t getCount();
 
         float _step_angle;
         
         TIM_HandleTypeDef stepdir_handle;
         PinName _pin_step, _pin_dir;
-    private:
+
         STM32CascadeTimer linkedTimer;
+        int cascade_result;
 
 };
 
